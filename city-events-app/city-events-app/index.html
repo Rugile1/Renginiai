@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miesto Renginiai</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Miesto Renginiai</h1>
+
+<!-- Prisijungimo forma -->
+<div class="login-form" id="loginForm">
+    <h2>Prisijunkite</h2>
+    <input type="text" id="username" placeholder="Vartotojo vardas" required>
+    <input type="password" id="password" placeholder="Slaptažodis" required>
+    <button class="btn" onclick="login()">Prisijungti</button>
+    <p id="loginError" style="color: red; display: none;">Netinkami prisijungimo duomenys. Bandykite dar kartą.</p>
+    <p>Neturite paskyros? <a href="javascript:void(0);" onclick="showRegisterForm()">Registruokitės</a></p>
+</div>
+
+<!-- Registracijos forma -->
+<div class="register-form" id="registerForm" style="display: none;">
+    <h2>Registruokitės</h2>
+    <input type="text" id="registerUsername" placeholder="Vartotojo vardas" required>
+    <input type="password" id="registerPassword" placeholder="Slaptažodis" required>
+    <button class="btn" onclick="register()">Registruotis</button>
+    <p id="registerError" style="color: red; display: none;">Šis vartotojas jau egzistuoja!</p>
+    <p>Jau turite paskyrą? <a href="javascript:void(0);" onclick="showLoginForm()">Prisijunkite</a></p>
+</div>
+
+
+        <!-- Renginių sąrašas, rodomas tik prisijungus -->
+        <div id="eventList" style="display:none;">
+            <h2>Renginiai</h2>
+            <ul class="event-list" id="eventsList">
+                <!-- Dynamically populated with events -->
+            </ul>
+        </div>
+
+        <!-- Vartotojo slaptažodžio keitimo forma -->
+        <div id="userPanel" style="display:none;">
+            <h2>Pakeisti slaptažodį</h2>
+            <input type="password" id="newPassword" placeholder="Naujas slaptažodis" required>
+            <button class="btn" onclick="changePassword()">Keisti slaptažodį</button>
+            <p id="passwordChangeMessage" style="color: green; display: none;">Slaptažodis sėkmingai pakeistas.</p>
+            <p id="passwordError" style="color: red; display: none;">Klaida keičiant slaptažodį.</p>
+            <a href="javascript:void(0);" class="logout-btn" onclick="logout()">Atsijungti</a>
+        </div>
+        
+    </div>
+    
+    <div id="userManagement" style="display:none;">
+        <h2>Vartotojų valdymas</h2>
+        <ul id="usersList"></ul>
+    </div>
+    
+
+    <script>
+        // Simuliuojami vartotojai (administratorius ir paprastas vartotojas)
+        const users = [
+            { username: 'admin', password: 'admin123', role: 'admin' },
+            { username: 'user1', password: 'user123', role: 'user' },
+            { username: 'user2', password: 'user234', role: 'user' }
+        ];
+
+        const events = [
+            { id: 1, name: "Kalėdų Turgus", date: "2024-12-24", description: "Nuostabus Kalėdų turgus su šventine nuotaika ir gardžiais kepiniais.", image: "https://naujasisturgus.lt/wp-content/uploads/2024/12/Naujojo-Turgaus-Kaledine-Muge-1920-x-1080-piks.-1920-x-1080-piks.-400x250.jpg" },
+            { id: 2, name: "Naujųjų Metų Sutikimas", date: "2024-12-31", description: "Nepamirštamas Naujųjų Metų sutikimas su fejerverkais ir muzika.", image: "https://klaipedossventes.lt/wp-content/uploads/2024/11/Naujieji-2025-768x402.jpg" },
+            { id: 3, name: "Žiemos Stebuklas", date: "2025-01-05", description: "Patirkite žiemos stebuklą su čiuožimu ant ledo ir karšta kakava.", image: "https://klaipedaassutavim.lt/storage_old/posts/077f647d6e7a7ed9b4949d062554ce7a.jpg" }
+        ];
+
+        let currentUser = null;
+
+        // Funkcija prisijungimui
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const user = users.find(u => u.username === username && u.password === password);
+
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('eventList').style.display = 'block';
+                document.getElementById('userPanel').style.display = 'none'; // Hide password change for admin
+
+                // Rodyti renginius
+                displayEvents();
+
+                // Jeigu paprastas vartotojas, rodyti slaptažodžio keitimo formą
+                if (user.role === 'user') {
+                    document.getElementById('userPanel').style.display = 'block';
+                }
+
+                // Administratorius
+                if (user.role === 'admin') {
+                    alert("Sveiki, administratoriau!");
+                }
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        // Funkcija atsijungimui
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('eventList').style.display = 'none';
+            document.getElementById('userPanel').style.display = 'none';
+        }
+
+        // Funkcija slaptažodžio keitimui
+        function changePassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            if (newPassword) {
+                currentUser.password = newPassword;
+                document.getElementById('passwordChangeMessage').style.display = 'block';
+                document.getElementById('passwordError').style.display = 'none';
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+            }
+        }
+
+        // Funkcija rodyti renginius
+        function displayEvents() {
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = '';
+
+            events.forEach(event => {
+                const li = document.createElement('li');
+                li.classList.add('event-item');
+                li.innerHTML = `
+                    <img src="${event.image}" alt="${event.name}" class="event-image">
+                    <h3>${event.name}</h3>
+                    <p><span>Data:</span> ${event.date}</p>
+                    <p><span>Aprašymas:</span> ${event.description}</p>
+                    ${currentUser && currentUser.role === 'admin' ? `
+                        <button onclick="editEvent(${event.id})" class="btn">Redaguoti</button>
+                        <button onclick="deleteEvent(${event.id})" class="btn" style="background-color: red;">Trinti</button>
+                    ` : ''}
+                `;
+                eventsList.appendChild(li);
+            });
+        }
+
+        // Funkcija redaguoti renginį
+        function editEvent(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (event) {
+                // Redagavimo logika
+                const newName = prompt("Naujas renginio pavadinimas", event.name);
+                const newDate = prompt("Nauja data", event.date);
+                const newDescription = prompt("Naujas aprašymas", event.description);
+
+                if (newName && newDate && newDescription) {
+                    event.name = newName;
+                    event.date = newDate;
+                    event.description = newDescription;
+                    displayEvents(); // Atnaujinti renginių sąrašą
+                }
+            }
+        }
+
+        // Funkcija ištrinti renginį
+        function deleteEvent(eventId) {
+            const index = events.findIndex(e => e.id === eventId);
+            if (index > -1) {
+                events.splice(index, 1); // Pašalinti renginį iš masyvo
+                displayEvents(); // Atnaujinti renginių sąrašą
+            }
+        }
+    </script>
+
+</body>
+</html>
